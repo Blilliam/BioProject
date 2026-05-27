@@ -72,7 +72,7 @@ public class CodonGame extends JFrame {
 		p.setBackground(BG);
 		p.setBorder(new EmptyBorder(16, 16, 0, 16));
 
-		JLabel title = new JLabel("🧬 Codon–Anticodon Matching", SwingConstants.CENTER);
+		JLabel title = new JLabel("Codon–Anticodon Matching", SwingConstants.CENTER);
 		title.setFont(new Font("SansSerif", Font.BOLD, 22));
 		title.setForeground(new Color(0xe0e0ff));
 
@@ -148,7 +148,7 @@ public class CodonGame extends JFrame {
 		lbl.setFont(new Font("SansSerif", Font.PLAIN, 13));
 		wrapper.add(lbl, BorderLayout.NORTH);
 
-		tileArea = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 8));
+		tileArea = new JPanel(new WrapLayout(FlowLayout.CENTER, 10, 8));
 		tileArea.setBackground(PANEL_BG);
 		tileArea.setBorder(
 				new CompoundBorder(new LineBorder(new Color(0x333333), 1, true), new EmptyBorder(8, 8, 8, 8)));
@@ -489,6 +489,50 @@ public class CodonGame extends JFrame {
 
 		@Override
 		public void dragDropEnd(DragSourceDropEvent e) {
+		}
+	}
+
+	// =========================================================================
+	// WrapLayout – FlowLayout that wraps properly inside scroll/pack
+	// =========================================================================
+	static class WrapLayout extends FlowLayout {
+		WrapLayout(int align, int hgap, int vgap) {
+			super(align, hgap, vgap);
+		}
+
+		@Override
+		public Dimension preferredLayoutSize(Container target) {
+			return layoutSize(target, true);
+		}
+
+		@Override
+		public Dimension minimumLayoutSize(Container target) {
+			return layoutSize(target, false);
+		}
+
+		private Dimension layoutSize(Container target, boolean preferred) {
+			synchronized (target.getTreeLock()) {
+				int targetWidth = target.getWidth();
+				if (targetWidth == 0) targetWidth = Integer.MAX_VALUE;
+				int hgap = getHgap(), vgap = getVgap();
+				Insets insets = target.getInsets();
+				int maxWidth = targetWidth - insets.left - insets.right - hgap * 2;
+				int width = 0, height = 0, rowWidth = 0, rowHeight = 0;
+				for (Component c : target.getComponents()) {
+					if (!c.isVisible()) continue;
+					Dimension d = preferred ? c.getPreferredSize() : c.getMinimumSize();
+					if (rowWidth + d.width > maxWidth && rowWidth > 0) {
+						width = Math.max(width, rowWidth);
+						height += rowHeight + vgap;
+						rowWidth = 0; rowHeight = 0;
+					}
+					rowWidth += d.width + hgap;
+					rowHeight = Math.max(rowHeight, d.height);
+				}
+				width = Math.max(width, rowWidth);
+				height += rowHeight + insets.top + insets.bottom + vgap * 2;
+				return new Dimension(width, height);
+			}
 		}
 	}
 
